@@ -1,0 +1,17 @@
+# ngrok_domains.txt
+# Reserved ngrok domains to assign to worktrees (one per line).
+# Lines starting with # are ignored.
+#
+# Requirements:
+#   - ngrok Pro or Business plan (reserved domains)
+#   - NGROK_AUTHTOKEN set in your root .env
+#   - "ngrok" service in your docker-compose.yml
+#   - ngrok_domains_file: ngrok_domains.txt in worktree-config.yml
+#
+# Your main instance should use a separate domain not listed here.
+# Each worktree gets the next available domain from this list.
+#
+# Example:
+# myapp-wt1.ngrok.dev
+# myapp-wt2.ngrok.dev
+# myapp-wt3.ngrok.dev

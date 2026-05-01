@@ -1,0 +1,125 @@
+# worktree-config.yml
+# Copy this file to worktree-config.yml and customize for your project.
+# All paths are relative to the directory containing this file (your repo root).
+#
+# After copying, add these lines to your .gitignore:
+#   worktree-config.yml   (optional — commit it if you want to share settings)
+#   .worktrees/
+#   .worktree-registry.json
+#   ngrok_domains.txt     (contains personal domain names)
+
+# ── Required ─────────────────────────────────────────────────────────────────
+
+# Path to your Docker Compose file.
+compose_file: docker-compose.yml
+
+# ── Directories & Registry ───────────────────────────────────────────────────
+
+# Where git worktrees are created. Add to .gitignore.
+worktrees_dir: .worktrees
+
+# JSON file that tracks active worktrees and their port assignments. Add to .gitignore.
+registry_file: .worktree-registry.json
+
+# ── Port Allocation ───────────────────────────────────────────────────────────
+#
+# Each worktree gets its own isolated port group so stacks never conflict.
+# Port groups are generated from your compose file's ${VAR:-default} port variables.
+#
+# With port_base=5710, port_step=100, and 4 detected port variables:
+#   Worktree 0:  5710, 5711, 5712, 5713
+#   Worktree 1:  5810, 5811, 5812, 5813
+#   Worktree 2:  5910, 5911, 5912, 5913
+#
+# port_step must be >= the number of port-mapped services in your compose file.
+
+port_base: 5710
+port_step: 100
+max_worktrees: 10
+
+# ── Docker Project Naming ─────────────────────────────────────────────────────
+#
+# Each worktree's Docker project is named: <project_prefix>-<branch-slug>
+# Example: branch "feature/auth" → project "myapp-feature-auth"
+
+project_prefix: wt
+
+# ── Services ──────────────────────────────────────────────────────────────────
+#
+# All services in your compose file are started by default.
+# List any services to exclude from worktree stacks here.
+# The "ngrok" service is handled specially: it only starts when a domain is available.
+#
+# exclude_services:
+#   - ngrok
+
+# ── Health Check ──────────────────────────────────────────────────────────────
+#
+# The script waits for this service to be healthy before running post_start.
+# Auto-detected from service names if omitted (looks for "db", "postgres", etc.)
+#
+# health_wait_service: db
+
+# ── Post-Start Hook ───────────────────────────────────────────────────────────
+#
+# Command to run inside the stack after all services are healthy.
+# Ideal for database migrations. Runs as: docker compose exec <service> <command>
+#
+# post_start:
+#   service: api
+#   command: "flask db upgrade"
+#
+# Examples:
+#   Django:     python manage.py migrate
+#   Alembic:    uv run alembic upgrade head
+#   Prisma:     npx prisma migrate deploy
+#   Rails:      bundle exec rails db:migrate
+
+# ── Environment Variable Overrides ────────────────────────────────────────────
+#
+# Extra vars to inject into each worktree's .env file, beyond the port variables.
+# Your root .env is used as the base; these values are merged on top.
+#
+# Template variables available:
+#   {branch}          — branch name (e.g. "feature/auth")
+#   {slug}            — branch slug (e.g. "feature-auth")
+#   {compose_project} — Docker project name (e.g. "wt-feature-auth")
+#   {ngrok_domain}    — assigned ngrok domain (empty string if none)
+#   {VAR_lower}       — any detected port var, lowercased (e.g. {api_host_port})
+#
+# env_overrides:
+#   MY_API_URL: "http://localhost:{api_host_port}"
+#   FRONTEND_URL: "http://localhost:{ui_host_port}"
+#   SERVER_HOST: "https://{ngrok_domain}"    # useful with ngrok
+
+# ── ngrok Domain Pool (optional) ──────────────────────────────────────────────
+#
+# Assign a dedicated ngrok tunnel to each worktree automatically.
+# Requires ngrok Pro/Business (reserved domains) and a "ngrok" service in your
+# docker-compose.yml. See docker-compose.example.yml for the ngrok service config.
+#
+# 1. Create ngrok_domains.txt with one domain per line.
+# 2. Add NGROK_AUTHTOKEN to your root .env.
+# 3. Uncomment the line below.
+#
+# ngrok_domains_file: ngrok_domains.txt
+
+# ── Claude Code MCP Override (optional) ───────────────────────────────────────
+#
+# If you have an MCP server that calls your application API, this feature
+# automatically re-points it at each worktree's local port when Claude Code
+# is launched inside that worktree.
+#
+# How it works:
+#   1. The script reads `claude mcp get <server_name>` to find the server binary.
+#   2. It writes .claude/settings.json in the worktree with the same binary but
+#      with <api_url_env> set to http://localhost:<worktree-api-port>.
+#   3. When you run `just claude-worktree <branch>`, Claude Code picks up this
+#      settings.json and the MCP server talks to the right local stack.
+#
+# mcp_override:
+#   server_name: my-mcp-tool      # name as registered with `claude mcp add`
+#   api_url_env: MY_API_BASE_URL  # env var the server reads for the API URL
+#   api_port_var: API_HOST_PORT   # which port var to use (auto-detected if omitted)
+#   extra_env:                    # additional static env vars for the server process
+#     RUST_LOG: info

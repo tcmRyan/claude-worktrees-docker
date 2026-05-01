@@ -1,0 +1,84 @@
+# docker-compose.example.yml
+#
+# Example Docker Compose file showing the port variable pattern required by
+# claude-worktrees-docker. Each host port uses ${VAR_NAME:-default} substitution
+# so the tool can allocate a unique port group per worktree.
+#
+# Copy this to docker-compose.yml and adapt it to your project.
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: myapp
+      POSTGRES_PASSWORD: myapp_password
+      POSTGRES_DB: myapp
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${DB_HOST_PORT:-5432}:5432"   # ← variable host port
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U myapp -d myapp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "${REDIS_HOST_PORT:-6379}:6379"   # ← variable host port
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    restart: always
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://myapp:myapp_password@db:5432/myapp
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "${API_HOST_PORT:-8000}:8000"   # ← variable host port
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  ui:
+    build: ./frontend
+    restart: always
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: development
+    ports:
+      - "${UI_HOST_PORT:-3000}:3000"   # ← variable host port
+    depends_on:
+      - api
+
+  # Optional: ngrok tunnel for services that require HTTPS webhooks.
+  # Only started when a domain is available in ngrok_domains.txt.
+  # Requires ngrok Pro/Business (reserved domains) and NGROK_AUTHTOKEN in .env.
+  #
+  # ngrok:
+  #   image: ngrok/ngrok:latest
+  #   restart: unless-stopped
+  #   command: ["start", "--all", "--config", "/etc/ngrok.yml"]
+  #   environment:
+  #     NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:-}
+  #   ports:
+  #     - "${NGROK_HOST_PORT:-4040}:4040"
+  #   volumes:
+  #     - ./ngrok.yml:/etc/ngrok.yml:ro
+  #   depends_on:
+  #     - api
+
+volumes:
+  postgres_data:

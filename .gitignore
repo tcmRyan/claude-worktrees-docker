@@ -1,0 +1,20 @@
+# Active worktree directories (git worktrees live here)
+.worktrees/
+
+# Registry of active worktrees and their port assignments
+.worktree-registry.json
+
+# Your project's config (copy from worktree-config.example.yml)
+# Remove this line if you want to commit your config to share settings with your team
+worktree-config.yml
+
+# Your ngrok domain pool (contains personal reserved domains)
+ngrok_domains.txt
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# macOS
+.DS_Store
