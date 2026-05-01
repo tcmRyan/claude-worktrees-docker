@@ -77,7 +77,7 @@ Result: Claude's MCP tools automatically target the right local stack for each b
 ```bash
 git clone https://github.com/yourname/claude-worktrees-docker my-project
 cd my-project
-cp worktree-config.example.yml worktree-config.yml
+cp worktree-config.yml worktree-config.yml
 # Edit worktree-config.yml, add your docker-compose.yml
 pip install pyyaml
 just worktree-create feature/my-branch

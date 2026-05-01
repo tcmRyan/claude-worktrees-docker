@@ -4,7 +4,7 @@
 # Registry of active worktrees and their port assignments
 .worktree-registry.json
 
-# Your project's config (copy from worktree-config.example.yml)
+# Your project's config (copy from worktree-config.yml)
 # Remove this line if you want to commit your config to share settings with your team
 worktree-config.yml
 

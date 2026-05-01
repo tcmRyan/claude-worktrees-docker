@@ -96,7 +96,7 @@ def _parse_compose(compose_file: Path) -> tuple[list[str], list[str]]:
     if not compose_file.exists():
         return [], []
 
-    data = yaml.safe_load(compose_file.read_text()) or {}
+    data = yaml.safe_load(compose_file.read_text(encoding="utf-8")) or {}
     services_data: dict[str, Any] = data.get("services") or {}
 
     exclude = set(CONFIG.get("exclude_services") or [])
@@ -113,7 +113,7 @@ def _parse_compose(compose_file: Path) -> tuple[list[str], list[str]]:
             elif isinstance(entry, (int, float)):
                 continue
             else:
-                host_side = str(entry).split(":")[0]
+                host_side = str(entry).rsplit(":", 1)[0]
 
             for var in var_pattern.findall(host_side):
                 if var not in seen:
@@ -208,7 +208,7 @@ def _assign_ngrok_domain(registry: dict) -> str | None:
 def _get_mcp_command(server_name: str) -> str | None:
     """Read the command for an MCP server from Claude's config via `claude mcp get`."""
     try:
-        result = subprocess.run(["claude", "mcp", "get", server_name], capture_output=True, text=True)
+        result = subprocess.run(["claude", "mcp", "get", server_name], capture_output=True, text=True, encoding="utf-8")
         if result.returncode != 0:
             return None
         for line in result.stdout.splitlines():
@@ -385,6 +385,7 @@ def _symlink_ui_node_modules(worktree_path: Path) -> None:
             ["cmd", "/c", "mklink", "/J", str(dst), str(src)],
             capture_output=True,
             text=True,
+            encoding="utf-8",
         )
         if result.returncode == 0:
             print(f"  ui/node_modules: junction created → {src}")
@@ -440,7 +441,7 @@ def _run_docker(cmd: list[str]) -> subprocess.CompletedProcess[str]:
     """Run docker compose with inherited env stripped of port vars (prevents root .env bleed)."""
     strip = frozenset(PORT_VARS) | {"COMPOSE_PROJECT_NAME"} | set(CONFIG.get("env_overrides") or {})
     env = {k: v for k, v in os.environ.items() if k not in strip}
-    result = subprocess.run(cmd, capture_output=True, text=True, env=env)
+    result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", env=env)
     if result.returncode != 0 and result.stderr:
         print(result.stderr, file=sys.stderr)
     return result
@@ -464,6 +465,7 @@ def _wait_healthy(compose_project_name: str) -> bool:
             ["docker", "inspect", "--format", "{{.State.Health.Status}}", container],
             capture_output=True,
             text=True,
+            encoding="utf-8",
         )
         status = result.stdout.strip()
         if status == "healthy":
@@ -473,6 +475,7 @@ def _wait_healthy(compose_project_name: str) -> bool:
                 ["docker", "inspect", "--format", "{{.State.Running}}", container],
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
             )
             if running.stdout.strip() == "true":
                 print(f"  {container} is running (no healthcheck configured).")
@@ -497,6 +500,7 @@ def _cleanup_worktree(branch: str, compose_project_name: str, worktree_path: Pat
         if result.returncode != 0:
             print(f"  Warning: could not auto-remove {worktree_path}.", file=sys.stderr)
             print("  Remove manually, then run: git worktree prune", file=sys.stderr)
+        subprocess.run(["git", "branch", "-D", branch], cwd=REPO_ROOT, capture_output=True)
     registry = _load_registry()
     if branch in registry["worktrees"]:
         del registry["worktrees"][branch]
@@ -557,7 +561,7 @@ def cmd_create(branch: str, base: str) -> None:
     if "/" in base:
         remote = base.split("/")[0]
         print(f"Fetching from {remote}...")
-        r = subprocess.run(["git", "fetch", remote], cwd=REPO_ROOT, capture_output=True, text=True)
+        r = subprocess.run(["git", "fetch", remote], cwd=REPO_ROOT, capture_output=True, text=True, encoding="utf-8")
         if r.returncode != 0:
             print(f"Error: git fetch {remote} failed.", file=sys.stderr)
             if r.stderr:
