@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Sample App</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: 60px auto; }
+    button { margin: 4px; padding: 8px 16px; cursor: pointer; }
+    pre { background: #f4f4f4; padding: 12px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>Sample App</h1>
+  <button onclick="hit('/health')">Health</button>
+  <button onclick="hit('/count')">Increment counter</button>
+  <button onclick="hit('/db')">DB version</button>
+  <pre id="out">—</pre>
+  <script>
+    async function hit(path) {
+      const res = await fetch('http://localhost:' + (window.API_PORT || 8000) + path);
+      document.getElementById('out').textContent = JSON.stringify(await res.json(), null, 2);
+    }
+  </script>
+</body>
+</html>
